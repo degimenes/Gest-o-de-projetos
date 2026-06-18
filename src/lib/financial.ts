@@ -14,8 +14,11 @@ export function calculateFinancials(data: BaseFinancials): CalculatedFinancials 
   const deducoes = pis + cofins
   const rLiquida = vBruto - deducoes
 
-  const cVendasTotal =
-    data.custoMateriais + data.custoServicos + data.custoMaoDeObra + data.despesasAdm
+  const custosDiretos = data.custoMateriais + data.custoServicos + data.custoMaoDeObra
+  const mBruta = rLiquida - custosDiretos
+  const margemBrutaPercent = rLiquida > 0 ? (mBruta / rLiquida) * 100 : 0
+
+  const cVendasTotal = custosDiretos + data.despesasAdm
 
   const mLiquida = rLiquida - cVendasTotal
   const margemLiquidaPercent = rLiquida > 0 ? (mLiquida / rLiquida) * 100 : 0
@@ -26,6 +29,8 @@ export function calculateFinancials(data: BaseFinancials): CalculatedFinancials 
     cofins,
     deducoes,
     rLiquida,
+    mBruta,
+    margemBrutaPercent,
     cVendasTotal,
     mLiquida,
     margemLiquidaPercent,

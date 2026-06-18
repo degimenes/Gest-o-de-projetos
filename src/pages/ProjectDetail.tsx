@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
 import { mockProjects } from '@/lib/mock-data'
+import { MARGEM_CRITICA_PCT } from '@/lib/config'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { Project, Comment } from '@/types'
 import { Button } from '@/components/ui/button'
@@ -63,7 +64,7 @@ export default function ProjectDetail() {
   }
 
   const { baseFinancials: bf, financials: f } = project
-  const isCritical = f.margemLiquidaPercent < 15
+  const isCritical = f.margemLiquidaPercent < MARGEM_CRITICA_PCT
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -102,7 +103,7 @@ export default function ProjectDetail() {
           <AlertTriangle className="h-5 w-5 !text-red-600" />
           <AlertTitle className="text-red-800 font-bold">Atenção: Margem Crítica</AlertTitle>
           <AlertDescription className="text-red-700 mt-1">
-            Este projeto está com margem líquida inferior à meta de 15% (Atual:{' '}
+            Este projeto está com margem líquida inferior à meta de {MARGEM_CRITICA_PCT}% (Atual:{' '}
             <strong className="text-red-900">{f.margemLiquidaPercent.toFixed(1)}%</strong>). Por
             favor, adicione uma justificativa técnica ou plano de ação nos comentários abaixo.
           </AlertDescription>

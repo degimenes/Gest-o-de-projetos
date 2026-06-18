@@ -19,10 +19,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   })
 
   const [user, setUser] = useState<User | null>({
-    id: 'gerente_1',
-    name: 'Carlos Silva',
-    role: 'Gerente',
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
+    id: 'gestor_1',
+    name: 'Ana Diretora',
+    role: 'Gestor',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
   })
 
   return (

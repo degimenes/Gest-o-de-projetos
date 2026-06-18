@@ -1,6 +1,11 @@
 import { Project } from '@/types'
 import { calculateFinancials } from './financial'
 
+// Use dynamic dates so they fall within the default -30 days window
+const today = new Date()
+const daysAgo = (days: number) =>
+  new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
+
 const rawProjects = [
   {
     id: 'PRJ-2026-001',
@@ -8,6 +13,7 @@ const rawProjects = [
     managerId: 'gerente_1',
     managerName: 'Carlos Silva',
     status: 'Em Andamento' as const,
+    startDate: daysAgo(25),
     baseFinancials: {
       receitaProduto: 50000,
       receitaServico: 150000,
@@ -32,6 +38,7 @@ const rawProjects = [
     managerId: 'gerente_1',
     managerName: 'Carlos Silva',
     status: 'Em Andamento' as const,
+    startDate: daysAgo(20),
     baseFinancials: {
       receitaProduto: 0,
       receitaServico: 200000,
@@ -56,6 +63,7 @@ const rawProjects = [
     managerId: 'gerente_2',
     managerName: 'Mariana Costa',
     status: 'Concluído' as const,
+    startDate: daysAgo(15),
     baseFinancials: {
       receitaProduto: 0,
       receitaServico: 300000,
@@ -72,6 +80,7 @@ const rawProjects = [
     managerId: 'gerente_2',
     managerName: 'Mariana Costa',
     status: 'Em Andamento' as const,
+    startDate: daysAgo(10),
     baseFinancials: {
       receitaProduto: 80000,
       receitaServico: 120000,
@@ -88,6 +97,7 @@ const rawProjects = [
     managerId: 'gerente_1',
     managerName: 'Carlos Silva',
     status: 'Pausado' as const,
+    startDate: daysAgo(5),
     baseFinancials: {
       receitaProduto: 0,
       receitaServico: 90000,

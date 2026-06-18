@@ -22,6 +22,8 @@ export interface CalculatedFinancials {
   cofins: number
   deducoes: number
   rLiquida: number
+  mBruta: number
+  margemBrutaPercent: number
   cVendasTotal: number
   mLiquida: number
   margemLiquidaPercent: number
@@ -41,6 +43,7 @@ export interface Project {
   managerId: string
   managerName: string
   status: 'Em Andamento' | 'Concluído' | 'Pausado'
+  startDate: string
   baseFinancials: BaseFinancials
   financials: CalculatedFinancials
   comments: Comment[]

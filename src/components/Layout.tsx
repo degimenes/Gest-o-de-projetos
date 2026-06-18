@@ -40,7 +40,7 @@ export function Layout() {
   }
 
   const navItems = [
-    { name: 'Dashboard Geral', path: '/', icon: LayoutDashboard },
+    { name: 'Dashboard Geral', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Meus Projetos', path: '#', icon: FolderKanban },
     { name: 'Relatórios', path: '#', icon: FileBarChart },
     { name: 'Configurações', path: '#', icon: Settings },
