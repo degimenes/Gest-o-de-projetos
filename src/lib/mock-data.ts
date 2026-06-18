@@ -1,116 +1,92 @@
-import { Project } from '@/types'
-import { calculateFinancials } from './financial'
+import { Project, User } from '@/types'
+import { subDays } from 'date-fns'
 
-// Use dynamic dates so they fall within the default -30 days window
-const today = new Date()
-const daysAgo = (days: number) =>
-  new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
-
-const rawProjects = [
+export const mockUsers: User[] = [
   {
-    id: 'PRJ-2026-001',
+    id: 'gestor_1',
+    name: 'Ana Diretora',
+    role: 'Gestor',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
+  },
+  {
+    id: 'gerente_1',
+    name: 'Carlos Silva',
+    role: 'Gerente',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
+  },
+  {
+    id: 'coord_1',
+    name: 'João Coordenador',
+    role: 'Coordenador',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=2',
+  },
+]
+
+export const mockProjects: Project[] = [
+  {
+    id: 'proj_1',
     name: 'Implementação ERP Odoo',
     managerId: 'gerente_1',
     managerName: 'Carlos Silva',
-    status: 'Em Andamento' as const,
-    startDate: daysAgo(25),
+    status: 'Em Andamento',
+    startDate: subDays(new Date(), 15).toISOString(),
     baseFinancials: {
       receitaProduto: 50000,
       receitaServico: 150000,
       custoMateriais: 20000,
       custoServicos: 30000,
-      custoMaoDeObra: 60000,
+      custoMaoDeObra: 40000,
       despesasAdm: 10000,
     },
-    comments: [
-      {
-        id: 'c1',
-        authorName: 'Ana Souza',
-        authorAvatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=2',
-        content: 'Alocação extra de horas aprovada para a fase 2.',
-        timestamp: '2026-06-15T14:30:00Z',
-      },
-    ],
-  },
-  {
-    id: 'PRJ-2026-002',
-    name: 'Migração Cloud AWS',
-    managerId: 'gerente_1',
-    managerName: 'Carlos Silva',
-    status: 'Em Andamento' as const,
-    startDate: daysAgo(20),
-    baseFinancials: {
-      receitaProduto: 0,
-      receitaServico: 200000,
-      custoMateriais: 50000,
-      custoServicos: 80000,
-      custoMaoDeObra: 40000,
-      despesasAdm: 15000,
-    },
-    comments: [
-      {
-        id: 'c2',
-        authorName: 'Carlos Silva',
-        authorAvatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
-        content: 'Custos de infraestrutura aumentaram devido ao câmbio. Margem em risco.',
-        timestamp: '2026-06-16T09:15:00Z',
-      },
-    ],
-  },
-  {
-    id: 'PRJ-2026-003',
-    name: 'Aplicativo Mobile B2B',
-    managerId: 'gerente_2',
-    managerName: 'Mariana Costa',
-    status: 'Concluído' as const,
-    startDate: daysAgo(15),
-    baseFinancials: {
-      receitaProduto: 0,
-      receitaServico: 300000,
-      custoMateriais: 10000,
-      custoServicos: 20000,
-      custoMaoDeObra: 120000,
-      despesasAdm: 25000,
+    financials: {
+      vBruto: 200000,
+      pis: 3300,
+      cofins: 15200,
+      iss: 7500,
+      deducoes: 26000,
+      rLiquida: 174000,
+      mBruta: 84000,
+      margemBrutaPercent: 42,
+      cVendasTotal: 90000,
+      lucroAntesImpostos: 74000,
+      csll: 6660,
+      irpj: 11100,
+      mLiquida: 56240,
+      margemLiquidaPercent: 28.12,
     },
     comments: [],
   },
   {
-    id: 'PRJ-2026-004',
-    name: 'Data Lake Analytics',
-    managerId: 'gerente_2',
-    managerName: 'Mariana Costa',
-    status: 'Em Andamento' as const,
-    startDate: daysAgo(10),
-    baseFinancials: {
-      receitaProduto: 80000,
-      receitaServico: 120000,
-      custoMateriais: 60000,
-      custoServicos: 40000,
-      custoMaoDeObra: 70000,
-      despesasAdm: 12000,
-    },
-    comments: [],
-  },
-  {
-    id: 'PRJ-2026-005',
-    name: 'Auditoria de Segurança',
+    id: 'proj_2',
+    name: 'Upgrade Infraestrutura de Redes',
     managerId: 'gerente_1',
     managerName: 'Carlos Silva',
-    status: 'Pausado' as const,
-    startDate: daysAgo(5),
+    status: 'Concluído',
+    startDate: subDays(new Date(), 45).toISOString(),
     baseFinancials: {
-      receitaProduto: 0,
-      receitaServico: 90000,
-      custoMateriais: 5000,
+      receitaProduto: 120000,
+      receitaServico: 40000,
+      custoMateriais: 80000,
       custoServicos: 10000,
-      custoMaoDeObra: 45000,
+      custoMaoDeObra: 20000,
       despesasAdm: 5000,
+    },
+    financials: {
+      vBruto: 160000,
+      pis: 2640,
+      cofins: 12160,
+      iss: 2000,
+      deducoes: 16800,
+      rLiquida: 143200,
+      mBruta: 33200,
+      margemBrutaPercent: 20.75,
+      cVendasTotal: 110000,
+      lucroAntesImpostos: 28200,
+      csll: 2538,
+      irpj: 4230,
+      mLiquida: 21432,
+      margemLiquidaPercent: 13.39,
     },
     comments: [],
   },
 ]
-
-export const mockProjects: Project[] = rawProjects.map((p) => ({
-  ...p,
-  financials: calculateFinancials(p.baseFinancials),
-}))
