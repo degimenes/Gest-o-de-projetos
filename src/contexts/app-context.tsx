@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { DateRange } from 'react-day-picker'
 import { addDays } from 'date-fns'
-import { User } from '@/types'
-import { mockUsers } from '@/lib/mock-data'
+import { User, Project } from '@/types'
+import { mockUsers, mockProjects } from '@/lib/mock-data'
 
 interface AppContextType {
   dateRange: DateRange | undefined
@@ -24,6 +24,8 @@ interface AppContextType {
   users: User[]
   setUsers: (users: User[]) => void
   isLoading: boolean
+  projects: Project[]
+  setProjects: (projects: Project[]) => void
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -41,6 +43,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [csll, setCsll] = useState(9)
   const [irpj, setIrpj] = useState(15)
   const [users, setUsers] = useState<User[]>(mockUsers)
+  const [projects, setProjects] = useState<Project[]>([])
 
   const [lastSyncDate, setLastSyncDate] = useState(
     new Date(Date.now() - 3600000).toLocaleString('pt-BR'),
@@ -52,12 +55,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (user) {
+    const fetchProjects = async () => {
       setIsLoading(true)
-      const timer = setTimeout(() => {
+      try {
+        if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+          setProjects(mockProjects)
+        } else {
+          // Simulate database connection fetch to Odoo PostgreSQL
+          const response = await fetch('/api/odoo/projects').catch(() => null)
+          if (response?.ok) {
+            const data = await response.json()
+            setProjects(data)
+          } else {
+            console.warn('Odoo integration not available. Returning empty.')
+            setProjects([])
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load projects', err)
+      } finally {
         setIsLoading(false)
-      }, 1500)
-      return () => clearTimeout(timer)
+      }
+    }
+
+    if (user) {
+      fetchProjects()
     }
   }, [user])
 
@@ -95,6 +117,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         users,
         setUsers,
         isLoading,
+        projects,
+        setProjects,
       }}
     >
       {children}

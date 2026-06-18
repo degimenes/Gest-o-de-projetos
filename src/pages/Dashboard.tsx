@@ -14,11 +14,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { mockProjects } from '@/lib/mock-data'
 
 export default function Dashboard() {
-  const { isLoading, margemCritica } = useApp()
-  const projects = mockProjects.map((p) => ({
+  const { isLoading, margemCritica, projects: appProjects } = useApp()
+  const projects = appProjects.map((p) => ({
     id: p.id,
     name: p.name,
     manager: p.managerName,

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
-import { mockProjects } from '@/lib/mock-data'
 import { formatCurrency } from '@/lib/utils'
 import { exportToExcel } from '@/lib/export'
 import { calculateFinancials } from '@/lib/financial'
@@ -57,7 +56,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, margemCritica } = useApp()
+  const { user, margemCritica, projects } = useApp()
   const { toast } = useToast()
 
   const [project, setProject] = useState<Project | null>(null)
@@ -66,7 +65,7 @@ export default function ProjectDetail() {
   const [issPercent, setIssPercent] = useState<number>(5)
 
   useEffect(() => {
-    const found = mockProjects.find((p) => p.id === id)
+    const found = projects.find((p) => p.id === id)
     if (found) {
       setProject(found)
       setIssPercent(found.baseFinancials.issPercent ?? 5)
@@ -79,7 +78,7 @@ export default function ProjectDetail() {
         setComments(found.comments || [])
       }
     }
-  }, [id])
+  }, [id, projects])
 
   if (!project) {
     return (

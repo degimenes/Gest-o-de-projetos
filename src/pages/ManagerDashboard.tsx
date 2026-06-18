@@ -13,18 +13,17 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { mockProjects } from '@/lib/mock-data'
 
 export default function ManagerDashboard() {
   const { search } = useLocation()
-  const { isLoading, margemCritica, user, users } = useApp()
+  const { isLoading, margemCritica, user, users, projects } = useApp()
   const params = new URLSearchParams(search)
   const id = params.get('id') || user?.id
 
   if (!id) return <Navigate to="/dashboard" replace />
 
   const manager = users.find((u) => u.id === id) || user
-  const managerProjects = mockProjects.filter((p) => p.managerId === id)
+  const managerProjects = projects.filter((p) => p.managerId === id)
 
   // Calc totals
   const totalReceita = managerProjects.reduce((acc, p) => acc + p.financials.rLiquida, 0)
