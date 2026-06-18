@@ -41,7 +41,17 @@ export function Layout() {
 
   const navItems = [
     { name: 'Dashboard Geral', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Meus Projetos', path: '#', icon: FolderKanban },
+    {
+      name:
+        user?.role === 'Gestor' || user?.role === 'Diretoria'
+          ? 'Visão por Gerente'
+          : 'Meus Projetos',
+      path:
+        user?.role === 'Gerente' || user?.role === 'Coordenador'
+          ? `/gerente?id=${user.id}`
+          : '/gerente',
+      icon: FolderKanban,
+    },
     { name: 'Relatórios', path: '#', icon: FileBarChart },
     { name: 'Configurações', path: '#', icon: Settings },
   ]
@@ -80,7 +90,8 @@ export function Layout() {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = location.pathname === item.path
+            const baseItemPath = item.path.split('?')[0]
+            const isActive = location.pathname === baseItemPath && baseItemPath !== '#'
             return (
               <Link
                 key={item.name}

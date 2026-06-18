@@ -15,13 +15,19 @@ export default function Login() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     // Mock login - in reality this would hit Supabase Auth
-    setUser({
+    const loggedUser = {
       id: 'gerente_1',
       name: 'Carlos Silva',
-      role: 'Gerente',
+      role: 'Gerente' as const,
       avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
-    })
-    navigate('/')
+    }
+    setUser(loggedUser)
+
+    if (loggedUser.role === 'Gerente' || loggedUser.role === 'Coordenador') {
+      navigate(`/gerente?id=${loggedUser.id}`)
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   return (

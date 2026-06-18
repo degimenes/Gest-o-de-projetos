@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppProvider } from '@/contexts/app-context'
 import { Layout } from './components/Layout'
 import Dashboard from './pages/Dashboard'
+import ManagerDashboard from './pages/ManagerDashboard'
 import ProjectDetail from './pages/ProjectDetail'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
@@ -24,6 +25,7 @@ const App = () => (
           <Route element={<Layout />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/gerente" element={<ManagerDashboard />} />
             <Route path="/projeto/:id" element={<ProjectDetail />} />
           </Route>
           <Route path="*" element={<NotFound />} />
