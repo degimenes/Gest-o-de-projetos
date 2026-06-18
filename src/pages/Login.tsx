@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useApp } from '@/contexts/app-context'
+import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,29 +12,21 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { setUser, users } = useApp()
+  const { signIn } = useAuth()
   const navigate = useNavigate()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    // Simple mock authentication enforcing 'admin123'
-    if (password !== 'admin123') {
+    const result = await signIn(email, password)
+
+    if (result.error) {
       setError('Credenciais inválidas. Verifique seu e-mail e senha.')
       return
     }
 
-    const matchedUser =
-      users.find((u) => email.toLowerCase().includes(u.role.toLowerCase())) || users[0]
-
-    setUser(matchedUser)
-
-    if (matchedUser.role === 'Gerente' || matchedUser.role === 'Coordenador') {
-      navigate(`/gerente?id=${matchedUser.id}`)
-    } else {
-      navigate('/dashboard')
-    }
+    navigate('/dashboard')
   }
 
   return (
@@ -76,7 +68,6 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Use 'admin123'"
                 required
               />
             </div>

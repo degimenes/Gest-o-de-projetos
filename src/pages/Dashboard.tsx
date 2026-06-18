@@ -14,6 +14,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { AlertTriangle } from 'lucide-react'
 
 export default function Dashboard() {
   const { isLoading, margemCritica, projects: appProjects } = useApp()
@@ -167,14 +168,19 @@ export default function Dashboard() {
                           {p.manager}
                         </TableCell>
                         <TableCell className="text-right">
-                          <span
-                            className={cn(
-                              'font-semibold',
-                              p.margem < margemCritica ? 'text-red-600' : 'text-emerald-600',
+                          <div className="flex items-center justify-end gap-2">
+                            {p.margem < margemCritica && (
+                              <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
                             )}
-                          >
-                            {p.margem}%
-                          </span>
+                            <span
+                              className={cn(
+                                'font-semibold',
+                                p.margem < margemCritica ? 'text-red-600' : 'text-emerald-600',
+                              )}
+                            >
+                              {p.margem}%
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge

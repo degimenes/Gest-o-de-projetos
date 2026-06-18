@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
 import {
@@ -37,13 +37,10 @@ export default function Settings() {
   const {
     user,
     margemCritica,
-    setMargemCritica,
     issPadrao,
-    setIssPadrao,
     csll,
-    setCsll,
     irpj,
-    setIrpj,
+    saveSettings,
     users,
     lastSyncDate,
     nextSyncDate,
@@ -58,21 +55,45 @@ export default function Settings() {
     irpj,
   })
 
+  useEffect(() => {
+    setLocalParams({
+      margemCritica,
+      issPadrao,
+      csll,
+      irpj,
+    })
+  }, [margemCritica, issPadrao, csll, irpj])
+
   const { toast } = useToast()
 
   if (user?.role !== 'Gestor' && user?.role !== 'Diretoria') {
     return <Navigate to="/dashboard" replace />
   }
 
-  const handleSaveParams = () => {
-    setMargemCritica(localParams.margemCritica)
-    setIssPadrao(localParams.issPadrao)
-    setCsll(localParams.csll)
-    setIrpj(localParams.irpj)
-    toast({
-      title: 'Configurações Salvas',
-      description: 'Os parâmetros financeiros foram atualizados com sucesso no banco de dados.',
-    })
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSaveParams = async () => {
+    setIsSaving(true)
+    try {
+      await saveSettings({
+        margemCritica: localParams.margemCritica,
+        issPadrao: localParams.issPadrao,
+        csll: localParams.csll,
+        irpj: localParams.irpj,
+      })
+      toast({
+        title: 'Configurações Salvas',
+        description: 'Os parâmetros financeiros foram atualizados com sucesso no banco de dados.',
+      })
+    } catch (err) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao salvar as configurações.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleSync = async () => {
@@ -178,10 +199,15 @@ export default function Settings() {
             <CardFooter>
               <Button
                 onClick={handleSaveParams}
+                disabled={isSaving}
                 className="w-full bg-[#0ABFBC] hover:bg-[#09aba8] text-white rounded-md"
               >
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Alterações
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             </CardFooter>
           </Card>
