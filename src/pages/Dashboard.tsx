@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
 import { mockProjects } from '@/lib/mock-data'
-import { MARGEM_CRITICA_PCT } from '@/lib/config'
 import { formatCurrency } from '@/lib/utils'
+import { exportToExcel } from '@/lib/export'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -22,10 +22,11 @@ import {
 } from '@/components/ui/table'
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ShieldAlert, FileSpreadsheet } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function Dashboard() {
-  const { user, dateRange } = useApp()
+  const { user, dateRange, margemCritica } = useApp()
   const navigate = useNavigate()
   const [selectedManager, setSelectedManager] = useState<string>('all')
 
@@ -104,7 +105,49 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-slate-900">Dashboard Geral</h1>
           <p className="text-sm text-slate-500">Visão consolidada do portfólio de projetos.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4 print:hidden">
+          <Button
+            variant="outline"
+            className="text-slate-600 bg-white"
+            onClick={() => {
+              const filename = `EPA_Projetos_Geral_${new Date().toISOString().split('T')[0]}`
+              const resumoData = [
+                ['Métrica', 'Valor'],
+                ['Total de Projetos Ativos', activeProjects],
+                ['Faturamento Bruto Total', totalRevenue],
+                ['Margem Bruta Média (%)', avgGrossMargin],
+                ['Margem Líquida Média (%)', avgNetMargin],
+              ]
+              const detalhesData = [
+                [
+                  'Projeto',
+                  'Gerente',
+                  'Faturamento Bruto',
+                  'Margem Bruta %',
+                  'Margem Líquida %',
+                  'Status Risco',
+                ],
+              ]
+              tableData.forEach((p) => {
+                const f = p.financials
+                detalhesData.push([
+                  p.name,
+                  p.managerName,
+                  f.vBruto,
+                  f.margemBrutaPercent,
+                  f.margemLiquidaPercent,
+                  f.margemLiquidaPercent < margemCritica ? 'ALERTA' : 'SAUDÁVEL',
+                ])
+              })
+              exportToExcel(filename, [
+                { name: 'Resumo', data: resumoData },
+                { name: 'Detalhamento', data: detalhesData },
+              ])
+            }}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2 text-[#16A34A]" />
+            Excel
+          </Button>
           <Select value={selectedManager} onValueChange={setSelectedManager}>
             <SelectTrigger className="w-[220px] bg-white">
               <SelectValue placeholder="Filtrar por Gerente" />
@@ -160,7 +203,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${avgNetMargin < MARGEM_CRITICA_PCT ? 'text-red-600' : 'text-slate-900'}`}
+              className={`text-2xl font-bold ${avgNetMargin < margemCritica ? 'text-[#DC2626]' : 'text-slate-900'}`}
             >
               {avgNetMargin.toFixed(1)}%
             </div>
@@ -200,9 +243,7 @@ export default function Dashboard() {
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={
-                        entry.margemLiquidaPercent >= MARGEM_CRITICA_PCT ? '#10b981' : '#ef4444'
-                      }
+                      fill={entry.margemLiquidaPercent >= margemCritica ? '#16A34A' : '#DC2626'}
                     />
                   ))}
                 </Bar>
@@ -232,7 +273,7 @@ export default function Dashboard() {
               <TableBody>
                 {tableData.map((project) => {
                   const f = project.financials
-                  const isCritical = f.margemLiquidaPercent < MARGEM_CRITICA_PCT
+                  const isCritical = f.margemLiquidaPercent < margemCritica
                   return (
                     <TableRow
                       key={project.id}
@@ -248,16 +289,23 @@ export default function Dashboard() {
                         {f.margemBrutaPercent.toFixed(1)}%
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        <span className={isCritical ? 'text-red-600 font-bold' : 'text-slate-900'}>
+                        <span
+                          className={
+                            isCritical ? 'text-[#DC2626] font-bold' : 'text-[#16A34A] font-bold'
+                          }
+                        >
                           {f.margemLiquidaPercent.toFixed(1)}%
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex justify-center" title={isCritical ? 'Alerta' : 'OK'}>
+                        <div
+                          className="flex justify-center"
+                          title={isCritical ? 'Alerta' : 'Saudável'}
+                        >
                           {isCritical ? (
-                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            <AlertTriangle className="h-5 w-5 text-[#DC2626]" />
                           ) : (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                            <CheckCircle2 className="h-5 w-5 text-[#16A34A]" />
                           )}
                         </div>
                       </TableCell>

@@ -8,6 +8,9 @@ interface AppContextType {
   setDateRange: (range: DateRange | undefined) => void
   user: User | null
   setUser: (user: User | null) => void
+  margemCritica: number
+  setMargemCritica: (val: number) => void
+  lastSyncDate: string
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -25,8 +28,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
   })
 
+  const [margemCritica, setMargemCritica] = useState(15)
+  const lastSyncDate = new Date(Date.now() - 3600000).toLocaleString('pt-BR')
+
   return (
-    <AppContext.Provider value={{ dateRange, setDateRange, user, setUser }}>
+    <AppContext.Provider
+      value={{
+        dateRange,
+        setDateRange,
+        user,
+        setUser,
+        margemCritica,
+        setMargemCritica,
+        lastSyncDate,
+      }}
+    >
       {children}
     </AppContext.Provider>
   )

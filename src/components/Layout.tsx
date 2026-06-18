@@ -32,7 +32,16 @@ export function Layout() {
     navigate('/login')
   }
 
+  const { lastSyncDate } = useApp()
+
   const handleExport = (type: string) => {
+    if (type === 'PDF') {
+      const originalTitle = document.title
+      document.title = `EPA_Projetos_Layout_${new Date().toISOString().split('T')[0]}`
+      window.print()
+      document.title = originalTitle
+      return
+    }
     toast({
       title: `Exportação Iniciada`,
       description: `Gerando arquivo ${type} com a visão atual do dashboard...`,
@@ -53,13 +62,15 @@ export function Layout() {
       icon: FolderKanban,
     },
     { name: 'Relatórios', path: '#', icon: FileBarChart },
-    { name: 'Configurações', path: '#', icon: Settings },
+    ...(user?.role === 'Gestor' || user?.role === 'Diretoria'
+      ? [{ name: 'Configurações', path: '/configuracoes', icon: Settings }]
+      : []),
   ]
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#0F2044] text-white flex-shrink-0 flex flex-col transition-all duration-300">
+      <aside className="w-64 bg-[#0F2044] text-white flex-shrink-0 flex flex-col transition-all duration-300 print:hidden">
         <div className="p-6 border-b border-white/10">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <span className="text-[#0ABFBC]">EPA</span> Projetos
@@ -123,7 +134,7 @@ export function Layout() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Sticky Header */}
-        <header className="h-16 border-b bg-white flex items-center justify-between px-6 flex-shrink-0 z-10 shadow-sm">
+        <header className="h-16 border-b bg-white flex items-center justify-between px-6 flex-shrink-0 z-10 shadow-sm print:hidden">
           <div className="flex items-center flex-1 gap-4">
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
@@ -159,8 +170,35 @@ export function Layout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto bg-[#F8FAFC] p-6">
+        <main className="flex-1 overflow-auto bg-[#F8FAFC] p-6 print:p-0 print:bg-white relative">
+          {/* Print Header */}
+          <div className="hidden print:flex justify-between items-center border-b pb-4 mb-6">
+            <div className="flex items-center gap-4">
+              <img
+                src="https://img.usecurling.com/i?q=chart&color=azure&shape=fill"
+                alt="EPA Logo"
+                className="h-10 w-10 rounded"
+              />
+              <div>
+                <h1 className="text-xl font-bold text-slate-900">Relatório de Projetos BI</h1>
+                <p className="text-sm text-slate-500">
+                  Gerado em: {new Date().toLocaleDateString('pt-BR')}{' '}
+                  {new Date().toLocaleTimeString('pt-BR')}
+                </p>
+              </div>
+            </div>
+            <div className="text-right text-sm text-slate-500">
+              <p>Usuário: {user.name}</p>
+              <p>Perfil: {user.role}</p>
+            </div>
+          </div>
+
           <Outlet />
+
+          {/* Print Footer */}
+          <div className="hidden print:block fixed bottom-0 left-0 w-full text-center text-xs text-slate-500 pt-4 border-t bg-white">
+            Gerado em: {new Date().toLocaleString('pt-BR')} | Dados atualizados em: {lastSyncDate}
+          </div>
         </main>
       </div>
     </div>

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
 import { mockProjects } from '@/lib/mock-data'
-import { MARGEM_CRITICA_PCT } from '@/lib/config'
 import { formatCurrency } from '@/lib/utils'
+import { exportToExcel } from '@/lib/export'
 import { calculateFinancials } from '@/lib/financial'
 import { Project, Comment } from '@/types'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,7 @@ import {
   Download,
   CalendarDays,
   CheckCircle2,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts'
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
@@ -56,7 +57,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useApp()
+  const { user, margemCritica } = useApp()
   const { toast } = useToast()
 
   const [project, setProject] = useState<Project | null>(null)
@@ -112,7 +113,10 @@ export default function ProjectDetail() {
   const handlePrint = () => {
     toast({ title: 'Gerando PDF', description: 'Preparando o painel para exportação...' })
     setTimeout(() => {
+      const originalTitle = document.title
+      document.title = `EPA_Projetos_${project.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`
       window.print()
+      document.title = originalTitle
     }, 500)
   }
 
@@ -120,7 +124,7 @@ export default function ProjectDetail() {
   const currentBaseFinancials = { ...bf, issPercent }
   const f = calculateFinancials(currentBaseFinancials)
 
-  const isHealthy = f.margemLiquidaPercent >= MARGEM_CRITICA_PCT
+  const isHealthy = f.margemLiquidaPercent >= margemCritica
 
   const startDateStr = new Date(project.startDate).toLocaleDateString('pt-BR')
   const todayStr = new Date().toLocaleDateString('pt-BR')
@@ -149,12 +153,54 @@ export default function ProjectDetail() {
   const getBarColor = (type: string, value: number) => {
     if (type === 'total' || type === 'subtotal') return '#3b82f6'
     if (type === 'expense') return '#ef4444'
-    if (type === 'final') return value >= 0 ? '#10b981' : '#ef4444'
+    if (type === 'final') return value >= 0 ? '#16A34A' : '#DC2626'
     return '#cbd5e1'
+  }
+
+  const handleExcelExport = () => {
+    const filename = `EPA_Projeto_${project.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`
+
+    const resumoData = [
+      ['Métrica', 'Valor'],
+      ['Projeto', project.name],
+      ['Gerente', project.managerName],
+      ['Status', project.status],
+      ['Faturamento Bruto', f.vBruto],
+      ['Receita Líquida', f.rLiquida],
+      ['Margem Bruta (R$)', f.mBruta],
+      ['Margem Bruta (%)', f.margemBrutaPercent],
+      ['Margem Líquida (R$)', f.mLiquida],
+      ['Margem Líquida (%)', f.margemLiquidaPercent],
+      ['Status Risco', isHealthy ? 'SAUDÁVEL' : 'ALERTA'],
+    ]
+
+    const custosData = [
+      ['Categoria', 'Valor (R$)'],
+      ['Custo Mão de Obra', bf.custoMaoDeObra],
+      ['Custos de Materiais', bf.custoMateriais],
+      ['Custos de Serviços', bf.custoServicos],
+      ['Despesas Administrativas (ADM)', bf.despesasAdm],
+      ['Tributos Venda (PIS/COFINS/ISS)', f.pis + f.cofins + f.iss],
+      ['Tributos Lucro (CSLL/IRPJ)', f.csll + f.irpj],
+    ]
+
+    exportToExcel(filename, [
+      { name: 'Resumo Financeiro', data: resumoData },
+      { name: 'Decomposição de Custos', data: custosData },
+    ])
   }
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
+      {!isHealthy && (
+        <div className="bg-red-50 border border-red-200 text-[#DC2626] px-4 py-3 rounded-md flex items-center gap-3 shadow-sm print:hidden">
+          <AlertTriangle className="h-6 w-6 shrink-0" />
+          <span className="font-semibold text-sm">
+            Atenção: margem líquida abaixo do limite crítico de {margemCritica}%
+          </span>
+        </div>
+      )}
+
       {/* Section 1: Project Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 print:hidden">
         <div className="flex items-start gap-4">
@@ -197,6 +243,14 @@ export default function ProjectDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExcelExport}
+            className="text-[#16A34A] border-slate-200 bg-white hover:bg-slate-50"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Exportar Excel
+          </Button>
           <Button onClick={handlePrint} className="bg-[#0F2044] hover:bg-[#1a3266] text-white">
             <Download className="h-4 w-4 mr-2" />
             Exportar PDF
@@ -280,12 +334,12 @@ export default function ProjectDetail() {
               <span className="font-bold text-slate-900 text-lg">Total Margem Líquida</span>
               <div className="text-right">
                 <div
-                  className={`font-mono font-bold text-xl ${isHealthy ? 'text-emerald-600' : 'text-red-600'}`}
+                  className={`font-mono font-bold text-xl ${isHealthy ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}
                 >
                   {formatCurrency(f.mLiquida)}
                 </div>
                 <div
-                  className={`text-sm font-bold ${isHealthy ? 'text-emerald-600' : 'text-red-600'}`}
+                  className={`text-sm font-bold ${isHealthy ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}
                 >
                   {f.margemLiquidaPercent.toFixed(1)}%
                 </div>

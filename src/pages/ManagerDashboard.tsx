@@ -2,8 +2,8 @@ import { useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate, Navigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
 import { mockProjects } from '@/lib/mock-data'
-import { MARGEM_CRITICA_PCT } from '@/lib/config'
 import { formatCurrency } from '@/lib/utils'
+import { exportToExcel } from '@/lib/export'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 
 export default function ManagerDashboard() {
-  const { user, dateRange } = useApp()
+  const { user, dateRange, margemCritica } = useApp()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -123,6 +123,54 @@ export default function ManagerDashboard() {
   const canSelectManager = user?.role === 'Gestor' || user?.role === 'Diretoria'
 
   const handleExport = (type: string) => {
+    if (type === 'Excel') {
+      const filename = `EPA_Projetos_Gerente_${selectedManagerName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`
+      const resumoData = [
+        ['Métrica', 'Valor'],
+        ['Gerente', selectedManagerName],
+        ['Total de Projetos', totalProjects],
+        ['Faturamento Bruto Total', totalGrossRevenue],
+        ['Margem Bruta Média (%)', avgGrossMargin],
+        ['Margem Líquida Média (%)', avgNetMargin],
+      ]
+      const detalhesData = [
+        [
+          'Projeto',
+          'Faturamento Bruto',
+          'Receita Líquida',
+          'Margem Bruta (R$)',
+          'Margem Bruta (%)',
+          'Margem Líquida (%)',
+          'Status Risco',
+        ],
+      ]
+      tableData.forEach((p) => {
+        const f = p.financials
+        detalhesData.push([
+          p.name,
+          f.vBruto,
+          f.rLiquida,
+          f.mBruta,
+          f.margemBrutaPercent,
+          f.margemLiquidaPercent,
+          f.margemLiquidaPercent < margemCritica ? 'ALERTA' : 'SAUDÁVEL',
+        ])
+      })
+      exportToExcel(filename, [
+        { name: 'Resumo', data: resumoData },
+        { name: 'Detalhamento', data: detalhesData },
+      ])
+      return
+    }
+
+    if (type === 'PDF') {
+      const originalTitle = document.title
+      document.title = `EPA_Projetos_${selectedManagerName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`
+      window.print()
+      document.title = originalTitle
+      return
+    }
+
     toast({
       title: 'Exportação Iniciada',
       description: `Gerando arquivo ${type} com a visão do gerente ${selectedManagerName}...`,
@@ -164,14 +212,14 @@ export default function ManagerDashboard() {
             </Select>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
             <Button
               variant="outline"
               size="sm"
               className="text-slate-600 bg-white shadow-sm hover:bg-slate-50"
               onClick={() => handleExport('Excel')}
             >
-              <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+              <FileSpreadsheet className="h-4 w-4 mr-2 text-[#16A34A]" />
               Exportar Excel
             </Button>
             <Button
@@ -180,7 +228,7 @@ export default function ManagerDashboard() {
               className="text-slate-600 bg-white shadow-sm hover:bg-slate-50"
               onClick={() => handleExport('PDF')}
             >
-              <Download className="h-4 w-4 mr-2 text-red-600" />
+              <Download className="h-4 w-4 mr-2 text-[#DC2626]" />
               Exportar PDF
             </Button>
           </div>
@@ -224,7 +272,7 @@ export default function ManagerDashboard() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${avgNetMargin < MARGEM_CRITICA_PCT ? 'text-red-600' : 'text-emerald-600'}`}
+              className={`text-2xl font-bold ${avgNetMargin < margemCritica ? 'text-[#DC2626]' : 'text-[#16A34A]'}`}
             >
               {avgNetMargin.toFixed(1)}%
             </div>
@@ -309,7 +357,7 @@ export default function ManagerDashboard() {
               <TableBody>
                 {tableData.map((project) => {
                   const f = project.financials
-                  const isCritical = f.margemLiquidaPercent < MARGEM_CRITICA_PCT
+                  const isCritical = f.margemLiquidaPercent < margemCritica
                   return (
                     <TableRow
                       key={project.id}
@@ -332,7 +380,7 @@ export default function ManagerDashboard() {
                       <TableCell className="text-right font-mono">
                         <span
                           className={
-                            isCritical ? 'text-red-600 font-bold' : 'text-emerald-600 font-semibold'
+                            isCritical ? 'text-[#DC2626] font-bold' : 'text-[#16A34A] font-bold'
                           }
                         >
                           {f.margemLiquidaPercent.toFixed(1)}%
@@ -341,12 +389,12 @@ export default function ManagerDashboard() {
                       <TableCell className="text-center">
                         <div
                           className="flex justify-center"
-                          title={isCritical ? 'Abaixo da Meta' : 'OK'}
+                          title={isCritical ? 'Abaixo da Meta' : 'Saudável'}
                         >
                           {isCritical ? (
-                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            <AlertTriangle className="h-5 w-5 text-[#DC2626]" />
                           ) : (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                            <CheckCircle2 className="h-5 w-5 text-[#16A34A]" />
                           )}
                         </div>
                       </TableCell>
