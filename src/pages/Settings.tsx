@@ -65,12 +65,11 @@ export default function Settings() {
   }, [margemCritica, issPadrao, csll, irpj])
 
   const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false)
 
   if (user?.role !== 'Gestor' && user?.role !== 'Diretoria') {
     return <Navigate to="/dashboard" replace />
   }
-
-  const [isSaving, setIsSaving] = useState(false)
 
   const handleSaveParams = async () => {
     setIsSaving(true)
