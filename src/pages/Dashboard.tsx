@@ -29,16 +29,6 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [selectedManager, setSelectedManager] = useState<string>('all')
 
-  if (user?.role === 'Gerente' || user?.role === 'Coordenador') {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-4">
-        <ShieldAlert className="h-16 w-16 text-red-500" />
-        <h2 className="text-2xl font-bold text-slate-900">Acesso Negado</h2>
-        <p>Seu perfil ({user.role}) não tem permissão para acessar o Dashboard Geral.</p>
-      </div>
-    )
-  }
-
   const filteredProjects = useMemo(() => {
     let projs = mockProjects
 
@@ -96,6 +86,16 @@ export default function Dashboard() {
     mockProjects.forEach((p) => map.set(p.managerId, p.managerName))
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
   }, [])
+
+  if (user?.role === 'Gerente' || user?.role === 'Coordenador') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-4">
+        <ShieldAlert className="h-16 w-16 text-red-500" />
+        <h2 className="text-2xl font-bold text-slate-900">Acesso Negado</h2>
+        <p>Seu perfil ({user.role}) não tem permissão para acessar o Dashboard Geral.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
