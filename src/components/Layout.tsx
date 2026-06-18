@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 
 export function Layout() {
-  const { user, setUser, dateRange, setDateRange } = useApp()
+  const { user, setUser, dateRange, setDateRange, lastSyncDate } = useApp()
   const location = useLocation()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -31,8 +31,6 @@ export function Layout() {
     setUser(null)
     navigate('/login')
   }
-
-  const { lastSyncDate } = useApp()
 
   const handleExport = (type: string) => {
     if (type === 'PDF') {
