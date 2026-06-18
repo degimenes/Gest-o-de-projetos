@@ -14,17 +14,22 @@ export interface BaseFinancials {
   custoServicos: number
   custoMaoDeObra: number
   despesasAdm: number
+  issPercent?: number
 }
 
 export interface CalculatedFinancials {
   vBruto: number
   pis: number
   cofins: number
+  iss: number
   deducoes: number
   rLiquida: number
   mBruta: number
   margemBrutaPercent: number
   cVendasTotal: number
+  lucroAntesImpostos: number
+  csll: number
+  irpj: number
   mLiquida: number
   margemLiquidaPercent: number
 }

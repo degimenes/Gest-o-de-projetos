@@ -11,7 +11,10 @@ export function calculateFinancials(data: BaseFinancials): CalculatedFinancials 
   const pis = Math.max(0, baseImpostos * 0.0165 - creditosImpostos * 0.0165)
   const cofins = Math.max(0, baseImpostos * 0.076 - creditosImpostos * 0.076)
 
-  const deducoes = pis + cofins
+  const issPercent = data.issPercent ?? 5
+  const iss = baseImpostos * (issPercent / 100)
+
+  const deducoes = pis + cofins + iss
   const rLiquida = vBruto - deducoes
 
   const custosDiretos = data.custoMateriais + data.custoServicos + data.custoMaoDeObra
@@ -20,18 +23,28 @@ export function calculateFinancials(data: BaseFinancials): CalculatedFinancials 
 
   const cVendasTotal = custosDiretos + data.despesasAdm
 
-  const mLiquida = rLiquida - cVendasTotal
+  const lucroAntesImpostos = rLiquida - cVendasTotal
+
+  // CSLL e IRPJ sobre lucro real
+  const csll = lucroAntesImpostos > 0 ? lucroAntesImpostos * 0.09 : 0
+  const irpj = lucroAntesImpostos > 0 ? lucroAntesImpostos * 0.15 : 0
+
+  const mLiquida = lucroAntesImpostos - csll - irpj
   const margemLiquidaPercent = rLiquida > 0 ? (mLiquida / rLiquida) * 100 : 0
 
   return {
     vBruto,
     pis,
     cofins,
+    iss,
     deducoes,
     rLiquida,
     mBruta,
     margemBrutaPercent,
     cVendasTotal,
+    lucroAntesImpostos,
+    csll,
+    irpj,
     mLiquida,
     margemLiquidaPercent,
   }
