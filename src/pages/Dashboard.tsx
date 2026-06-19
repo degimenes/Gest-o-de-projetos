@@ -16,8 +16,29 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { AlertTriangle } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
+import { RefreshCw, Loader2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+
 export default function Dashboard() {
-  const { isLoading, margemCritica, projects: appProjects } = useApp()
+  const { toast } = useToast()
+  const { isLoading, margemCritica, projects: appProjects, triggerSync, isSyncing } = useApp()
+
+  const handleSync = async () => {
+    try {
+      await triggerSync()
+      toast({
+        title: 'Sincronização Concluída',
+        description: 'Os dados dos projetos foram atualizados a partir do Odoo.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Erro na Sincronização',
+        description: err?.data?.message || err?.message || 'Falha ao conectar com o Odoo.',
+        variant: 'destructive',
+      })
+    }
+  }
   const projects = appProjects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -43,11 +64,26 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-10">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Geral</h2>
-        <p className="text-slate-500 text-sm">
-          Visão consolidada do portfólio de projetos ativos e concluídos.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Geral</h2>
+          <p className="text-slate-500 text-sm">
+            Visão consolidada do portfólio de projetos ativos e concluídos.
+          </p>
+        </div>
+        <Button
+          onClick={handleSync}
+          disabled={isSyncing}
+          variant="outline"
+          className="bg-white border-slate-200"
+        >
+          {isSyncing ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          {isSyncing ? 'Sincronizando...' : 'Sincronizar Odoo'}
+        </Button>
       </div>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">

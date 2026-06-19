@@ -186,14 +186,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const triggerSync = async () => {
     setIsSyncing(true)
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        setLastSyncDate(new Date().toLocaleString('pt-BR'))
-        setNextSyncDate(new Date(Date.now() + 86400000).toLocaleString('pt-BR'))
-        setIsSyncing(false)
-        resolve()
-      }, 2000)
-    })
+    try {
+      await pb.send('/backend/v1/sync-odoo', { method: 'POST' })
+      setLastSyncDate(new Date().toLocaleString('pt-BR'))
+      setNextSyncDate(new Date(Date.now() + 86400000).toLocaleString('pt-BR'))
+      await loadData()
+    } catch (err: any) {
+      console.error('Failed to sync with Odoo:', err)
+      throw err
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   return (

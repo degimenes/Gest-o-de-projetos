@@ -96,11 +96,22 @@ export default function Settings() {
   }
 
   const handleSync = async () => {
-    await triggerSync()
-    toast({
-      title: 'Sincronização Concluída',
-      description: 'Os dados foram atualizados a partir do Odoo.',
-    })
+    try {
+      await triggerSync()
+      toast({
+        title: 'Sincronização Concluída',
+        description: 'Os dados foram atualizados a partir do Odoo.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Erro na Sincronização',
+        description:
+          err?.data?.message ||
+          err?.message ||
+          'Falha ao conectar com o Odoo. Verifique os Segredos.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
