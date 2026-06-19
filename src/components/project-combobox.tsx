@@ -27,8 +27,11 @@ export function ProjectCombobox({
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fetched, setFetched] = useState(false)
 
   useEffect(() => {
+    if (!open || fetched) return
+
     let mounted = true
     setLoading(true)
     setError(null)
@@ -37,6 +40,7 @@ export function ProjectCombobox({
         if (!mounted) return
         const data = Array.isArray(res) ? res : res.projects || res.items || res.data || []
         setProjects(data)
+        setFetched(true)
       })
       .catch((err) => {
         if (!mounted) return
@@ -49,7 +53,7 @@ export function ProjectCombobox({
     return () => {
       mounted = false
     }
-  }, [])
+  }, [open, fetched])
 
   const filteredProjects = projects.filter((p) => {
     if (!managerFilter) return true

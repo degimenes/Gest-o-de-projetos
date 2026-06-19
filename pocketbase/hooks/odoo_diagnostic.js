@@ -151,8 +151,35 @@ routerAdd(
         },
       }),
     })
+
+    if (authRes.statusCode !== 200 || authRes.json?.error) {
+      $app
+        .logger()
+        .error(
+          'Odoo auth handshake failed',
+          'status',
+          authRes.statusCode,
+          'error',
+          JSON.stringify(authRes.json?.error),
+        )
+      return e.internalServerError('Odoo auth failed')
+    }
+
     const uid = authRes.json?.result
-    if (!uid) return e.internalServerError('Odoo auth failed')
+    if (!uid) {
+      $app
+        .logger()
+        .error(
+          'Odoo auth failed for projects',
+          'db',
+          ODOO_DB,
+          'user',
+          ODOO_USER,
+          'response',
+          JSON.stringify(authRes.json),
+        )
+      return e.internalServerError('Odoo auth failed')
+    }
 
     const searchRes = $http.send({
       url: ODOO_URL + '/jsonrpc',
@@ -170,12 +197,25 @@ routerAdd(
             ODOO_PASSWORD,
             'account.analytic.account',
             'search_read',
-            [],
+            [[]],
             { fields: ['id', 'name', 'code', 'partner_id', 'user_id'] },
           ],
         },
       }),
     })
+
+    if (searchRes.statusCode !== 200 || searchRes.json?.error) {
+      $app
+        .logger()
+        .error(
+          'Odoo projects search failed',
+          'status',
+          searchRes.statusCode,
+          'error',
+          JSON.stringify(searchRes.json?.error),
+        )
+      return e.internalServerError('Failed to fetch projects from Odoo')
+    }
 
     return e.json(200, { projects: searchRes.json?.result || [] })
   },
