@@ -1,4 +1,4 @@
-import { useApp } from '@/contexts/app-context'
+import { useEffect, useState } from 'react'
 import { KpiCard } from '@/components/kpi-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -14,44 +14,100 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { AlertTriangle } from 'lucide-react'
-
+import { AlertTriangle, RefreshCw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getProjects, syncOdooProjects } from '@/services/projects'
+import { getSettings } from '@/services/settings'
+import { useRealtime } from '@/hooks/use-realtime'
+import { calculateFinancials } from '@/lib/financial'
 
 export default function Dashboard() {
   const { toast } = useToast()
-  const { isLoading, margemCritica, projects: appProjects, triggerSync, isSyncing } = useApp()
+
+  const [projectsData, setProjectsData] = useState<any[]>([])
+  const [settings, setSettings] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const loadData = async () => {
+    try {
+      const [projRes, setRes] = await Promise.all([getProjects(), getSettings()])
+      setProjectsData(projRes)
+      setSettings(setRes)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useRealtime('projects', () => {
+    loadData()
+  })
+
+  useRealtime('settings', () => {
+    loadData()
+  })
 
   const handleSync = async () => {
+    setIsSyncing(true)
     try {
-      await triggerSync()
+      await syncOdooProjects()
       toast({
         title: 'Sincronização Concluída',
         description: 'Os dados dos projetos foram atualizados a partir do Odoo.',
       })
+      await loadData()
     } catch (err: any) {
       toast({
         title: 'Erro na Sincronização',
         description: err?.data?.message || err?.message || 'Falha ao conectar com o Odoo.',
         variant: 'destructive',
       })
+    } finally {
+      setIsSyncing(false)
     }
   }
-  const projects = appProjects.map((p) => ({
-    id: p.id,
-    name: p.name,
-    manager: p.managerName,
-    receita: p.financials.rLiquida,
-    custo: p.financials.cVendasTotal,
-    lucro: p.financials.mLiquida,
-    margem: p.financials.margemLiquidaPercent,
-    status: p.status,
-  }))
+
+  const margemCritica = settings?.margem_critica_pct || 15
+
+  const projects = projectsData.map((p) => {
+    const base = {
+      receitaProduto: p.receita_venda_produto || 0,
+      receitaServico: p.receita_venda_servico || 0,
+      custoMateriais: p.custos_materiais || 0,
+      custoServicos: p.custos_servicos || 0,
+      custoMaoDeObra: p.custo_mao_de_obra || 0,
+      despesasAdm: p.despesas_adm || 0,
+    }
+    const taxes = {
+      issRate: settings?.iss_rate || 0,
+      csllRate: settings?.csll_rate || 0,
+      irpjRate: settings?.irpj_rate || 0,
+    }
+    const financials = calculateFinancials(base, taxes)
+
+    return {
+      id: p.id,
+      name: p.nome_projeto || 'Projeto Sem Nome',
+      manager: p.nome_gerente || 'Não atribuído',
+      receita: financials.rLiquida,
+      custo: financials.cVendasTotal,
+      lucro: financials.mLiquida,
+      margem: financials.margemLiquidaPercent
+        ? Number(financials.margemLiquidaPercent.toFixed(1))
+        : 0,
+      status: p.status || 'Em Andamento',
+    }
+  })
 
   const chartData = projects.map((p) => ({
-    name: p.name.substring(0, 15) + '...',
+    name: p.name.substring(0, 15) + (p.name.length > 15 ? '...' : ''),
     receita: p.receita,
     custo: p.custo,
     lucro: p.lucro,
@@ -73,7 +129,7 @@ export default function Dashboard() {
         </div>
         <Button
           onClick={handleSync}
-          disabled={isSyncing}
+          disabled={isSyncing || isLoading}
           variant="outline"
           className="bg-white border-slate-200"
         >
@@ -121,6 +177,10 @@ export default function Dashboard() {
           <CardContent className="h-[320px] pb-4">
             {isLoading ? (
               <Skeleton className="h-full w-full rounded-md" />
+            ) : chartData.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-slate-500">
+                Nenhum projeto encontrado.
+              </div>
             ) : (
               <ChartContainer
                 config={{
@@ -184,6 +244,10 @@ export default function Dashboard() {
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="flex h-32 items-center justify-center text-slate-500 border rounded-md">
+                Nenhum projeto encontrado.
               </div>
             ) : (
               <div className="rounded-md border overflow-x-auto">
