@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react'
 import { useLocation, Navigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
 import { KpiCard } from '@/components/kpi-card'
+import { getProjects, syncOdooProjects } from '@/services/projects'
+import { useRealtime } from '@/hooks/use-realtime'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -21,21 +24,48 @@ import { useToast } from '@/hooks/use-toast'
 export default function ManagerDashboard() {
   const { search } = useLocation()
   const { toast } = useToast()
-  const { isLoading, margemCritica, user, users, projects, isSyncing, triggerSync } = useApp()
+  const { margemCritica, user, users } = useApp()
+
+  const [projects, setProjects] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const loadData = async () => {
+    try {
+      const items = await getProjects()
+      setProjects(items)
+    } catch (error) {
+      console.error('Failed to load projects', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useRealtime('projects', () => {
+    loadData()
+  })
 
   const handleSync = async () => {
     try {
-      await triggerSync()
+      setIsSyncing(true)
+      await syncOdooProjects()
       toast({
         title: 'Sincronização Concluída',
         description: 'Os dados dos projetos foram atualizados a partir do Odoo.',
       })
+      await loadData()
     } catch (err: any) {
       toast({
         title: 'Erro na Sincronização',
         description: err?.data?.message || err?.message || 'Falha ao conectar com o Odoo.',
         variant: 'destructive',
       })
+    } finally {
+      setIsSyncing(false)
     }
   }
   const params = new URLSearchParams(search)
@@ -43,13 +73,28 @@ export default function ManagerDashboard() {
 
   if (!id) return <Navigate to="/dashboard" replace />
 
-  const manager = users.find((u) => u.id === id) || user
-  const managerProjects = projects.filter((p) => p.managerId === id)
+  const manager = users.find((u: any) => u.id === id) || user
+  const managerProjects = projects.filter((p: any) => (p.id_gerente || p.managerId) === id)
 
   // Calc totals
-  const totalReceita = managerProjects.reduce((acc, p) => acc + p.financials.rLiquida, 0)
-  const totalCusto = managerProjects.reduce((acc, p) => acc + p.financials.cVendasTotal, 0)
-  const totalLucro = managerProjects.reduce((acc, p) => acc + p.financials.mLiquida, 0)
+  const totalReceita = managerProjects.reduce((acc: number, p: any) => {
+    const r = (p.receita_venda_produto || 0) + (p.receita_venda_servico || 0)
+    return acc + (r > 0 ? r : p.financials?.rLiquida || 0)
+  }, 0)
+
+  const totalCusto = managerProjects.reduce((acc: number, p: any) => {
+    const c = (p.custos_materiais || 0) + (p.custos_servicos || 0) + (p.custo_mao_de_obra || 0)
+    return acc + (c > 0 ? c : p.financials?.cVendasTotal || 0)
+  }, 0)
+
+  const totalLucro = managerProjects.reduce((acc: number, p: any) => {
+    const r = (p.receita_venda_produto || 0) + (p.receita_venda_servico || 0)
+    const c = (p.custos_materiais || 0) + (p.custos_servicos || 0) + (p.custo_mao_de_obra || 0)
+    const d = p.despesas_adm || 0
+    const lucro = r - c - d
+    return acc + (r > 0 ? lucro : p.financials?.mLiquida || 0)
+  }, 0)
+
   const avgMargem = totalReceita > 0 ? ((totalLucro / totalReceita) * 100).toFixed(1) : '0'
 
   return (
@@ -123,41 +168,66 @@ export default function ManagerDashboard() {
                 </TableHeader>
                 <TableBody>
                   {managerProjects.length > 0 ? (
-                    managerProjects.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.name}</TableCell>
-                        <TableCell className="text-right">
-                          {p.financials.rLiquida.toLocaleString('pt-BR')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {p.financials.cVendasTotal.toLocaleString('pt-BR')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span
-                            className={cn(
-                              'font-semibold',
-                              p.financials.margemLiquidaPercent < margemCritica
-                                ? 'text-red-600'
-                                : 'text-emerald-600',
-                            )}
-                          >
-                            {p.financials.margemLiquidaPercent}%
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            variant={p.status === 'Concluído' ? 'secondary' : 'default'}
-                            className={
-                              p.status === 'Concluído'
-                                ? 'bg-slate-100 text-slate-700'
-                                : 'bg-[#0ABFBC] text-white'
-                            }
-                          >
-                            {p.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    managerProjects.map((p: any) => {
+                      const name = p.nome_projeto || p.name
+                      const status = p.status || 'Ativo'
+
+                      const r = (p.receita_venda_produto || 0) + (p.receita_venda_servico || 0)
+                      const finalReceita = r > 0 ? r : p.financials?.rLiquida || 0
+
+                      const c =
+                        (p.custos_materiais || 0) +
+                        (p.custos_servicos || 0) +
+                        (p.custo_mao_de_obra || 0)
+                      const finalCustos = c > 0 ? c : p.financials?.cVendasTotal || 0
+
+                      const d = p.despesas_adm || 0
+                      const finalLucro = r - c - d
+                      const margem =
+                        finalReceita > 0
+                          ? (finalLucro / finalReceita) * 100
+                          : p.financials?.margemLiquidaPercent || 0
+
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{name}</TableCell>
+                          <TableCell className="text-right">
+                            {finalReceita.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {finalCustos.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span
+                              className={cn(
+                                'font-semibold',
+                                margem < margemCritica ? 'text-red-600' : 'text-emerald-600',
+                              )}
+                            >
+                              {margem.toFixed(1)}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              variant={status === 'Concluído' ? 'secondary' : 'default'}
+                              className={
+                                status === 'Concluído'
+                                  ? 'bg-slate-100 text-slate-700'
+                                  : 'bg-[#0ABFBC] text-white'
+                              }
+                            >
+                              {status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-slate-500 py-8">
