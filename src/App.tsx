@@ -12,6 +12,7 @@ import ProjectDetail from './pages/ProjectDetail'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import Diagnostic from './pages/Diagnostic'
 
 const App = () => (
   <BrowserRouter>
@@ -29,6 +30,7 @@ const App = () => (
                 <Route path="/gerente" element={<ManagerDashboard />} />
                 <Route path="/projeto/:id" element={<ProjectDetail />} />
                 <Route path="/configuracoes" element={<Settings />} />
+                <Route path="/diagnostico" element={<Diagnostic />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFound />} />

@@ -18,6 +18,8 @@ import { AlertTriangle, RefreshCw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { getProjects, syncOdooProjects } from '@/services/projects'
+import { ProjectCombobox } from '@/components/project-combobox'
+import { LiveProjectFinancials } from '@/components/live-project-financials'
 import { getSettings } from '@/services/settings'
 import { useRealtime } from '@/hooks/use-realtime'
 import { calculateFinancials } from '@/lib/financial'
@@ -29,6 +31,7 @@ export default function Dashboard() {
   const [settings, setSettings] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [selectedProjectCode, setSelectedProjectCode] = useState('')
 
   const loadData = async () => {
     try {
@@ -141,6 +144,20 @@ export default function Dashboard() {
           {isSyncing ? 'Sincronizando...' : 'Sincronizar Odoo'}
         </Button>
       </div>
+
+      <Card className="shadow-sm border-slate-200 bg-white/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wider">
+            Consulta Financeira ao Vivo (Odoo)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-md">
+            <ProjectCombobox value={selectedProjectCode} onChange={setSelectedProjectCode} />
+          </div>
+          {selectedProjectCode && <LiveProjectFinancials code={selectedProjectCode} />}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard

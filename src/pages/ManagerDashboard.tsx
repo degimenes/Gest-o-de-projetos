@@ -3,6 +3,8 @@ import { useLocation, Navigate } from 'react-router-dom'
 import { useApp } from '@/contexts/app-context'
 import { KpiCard } from '@/components/kpi-card'
 import { getProjects, syncOdooProjects } from '@/services/projects'
+import { ProjectCombobox } from '@/components/project-combobox'
+import { LiveProjectFinancials } from '@/components/live-project-financials'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -29,6 +31,7 @@ export default function ManagerDashboard() {
   const [projects, setProjects] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [selectedProjectCode, setSelectedProjectCode] = useState('')
 
   const loadData = async () => {
     try {
@@ -122,6 +125,24 @@ export default function ManagerDashboard() {
           {isSyncing ? 'Sincronizando...' : 'Sincronizar Odoo'}
         </Button>
       </div>
+
+      <Card className="shadow-sm border-slate-200 bg-white/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wider">
+            Consulta Financeira ao Vivo (Odoo)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-md">
+            <ProjectCombobox
+              value={selectedProjectCode}
+              onChange={setSelectedProjectCode}
+              managerFilter={manager?.name}
+            />
+          </div>
+          {selectedProjectCode && <LiveProjectFinancials code={selectedProjectCode} />}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard title="Projetos Ativos" value={managerProjects.length} loading={isLoading} />
