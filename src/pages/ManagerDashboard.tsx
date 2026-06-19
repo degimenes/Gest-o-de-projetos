@@ -252,7 +252,7 @@ export default function ManagerDashboard() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-slate-500 py-8">
-                        Nenhum projeto encontrado para este gerente.
+                        Sem dados disponíveis.
                       </TableCell>
                     </TableRow>
                   )}

@@ -101,7 +101,7 @@ export function LiveProjectFinancials({ code }: { code: string }) {
                   {data.moveLines.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-6 text-slate-500">
-                        Nenhum movimento encontrado
+                        Sem dados disponíveis.
                       </TableCell>
                     </TableRow>
                   )}
@@ -147,7 +147,7 @@ export function LiveProjectFinancials({ code }: { code: string }) {
                   {data.analyticLines.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-6 text-slate-500">
-                        Nenhum apontamento encontrado
+                        Sem dados disponíveis.
                       </TableCell>
                     </TableRow>
                   )}

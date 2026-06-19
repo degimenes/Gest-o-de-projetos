@@ -196,7 +196,7 @@ export default function Dashboard() {
               <Skeleton className="h-full w-full rounded-md" />
             ) : chartData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-slate-500">
-                Nenhum projeto encontrado.
+                Sem dados disponíveis.
               </div>
             ) : (
               <ChartContainer
@@ -264,7 +264,7 @@ export default function Dashboard() {
               </div>
             ) : projects.length === 0 ? (
               <div className="flex h-32 items-center justify-center text-slate-500 border rounded-md">
-                Nenhum projeto encontrado.
+                Sem dados disponíveis.
               </div>
             ) : (
               <div className="rounded-md border overflow-x-auto">

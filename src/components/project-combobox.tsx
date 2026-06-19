@@ -69,7 +69,7 @@ export function ProjectCombobox({
         <Command>
           <CommandInput placeholder="Buscar por código ou nome do projeto..." />
           <CommandList>
-            <CommandEmpty>Nenhum projeto encontrado.</CommandEmpty>
+            <CommandEmpty>Sem dados disponíveis.</CommandEmpty>
             <CommandGroup>
               {filteredProjects.map((project) => (
                 <CommandItem

@@ -8,45 +8,13 @@ routerAdd(
     if (!code) return e.badRequestError('missing code')
 
     const ODOO_URL = $secrets.get('ODOO_URL')
-    if (!ODOO_URL || ODOO_URL.includes('mock')) {
-      if (code === '00-0000') return e.notFoundError('Project not found')
-      return e.json(200, {
-        account: { id: 1, name: 'Projeto Mockado ' + code, code: code },
-        moveLines: [
-          { id: 1, name: 'Fatura A', credit: 15000, debit: 0, balance: -15000, date: '2023-01-01' },
-          {
-            id: 2,
-            name: 'Pagamento Fornecedor',
-            credit: 0,
-            debit: 5000,
-            balance: 5000,
-            date: '2023-01-02',
-          },
-        ],
-        analyticLines: [
-          {
-            id: 1,
-            name: 'Apontamento Dev',
-            amount: -2000,
-            unit_amount: 20,
-            date: '2023-01-03',
-            employee_id: [1, 'João Silva'],
-          },
-          {
-            id: 2,
-            name: 'Consultoria',
-            amount: -1500,
-            unit_amount: 10,
-            date: '2023-01-04',
-            employee_id: [2, 'Maria Souza'],
-          },
-        ],
-      })
-    }
-
     const ODOO_DB = $secrets.get('ODOO_DB') || 'odoo'
     const ODOO_USER = $secrets.get('ODOO_USER')
     const ODOO_PASSWORD = $secrets.get('ODOO_PASSWORD')
+
+    if (!ODOO_URL || !ODOO_USER || !ODOO_PASSWORD) {
+      return e.badRequestError('Odoo credentials missing in secrets')
+    }
 
     const authRes = $http.send({
       url: ODOO_URL + '/jsonrpc',
@@ -161,19 +129,13 @@ routerAdd(
   '/backend/v1/odoo/projects',
   (e) => {
     const ODOO_URL = $secrets.get('ODOO_URL')
-    if (!ODOO_URL || ODOO_URL.includes('mock')) {
-      return e.json(200, {
-        projects: [
-          { id: 1, name: '7L 2025', code: '25-1034', user_id: [1, 'Admin'] },
-          { id: 2, name: 'Manjuba', code: '25-1003', user_id: [2, 'João Silva'] },
-          { id: 3, name: 'INSPEÇÃO', code: '23-0214', user_id: [1, 'Admin'] },
-        ],
-      })
-    }
-
     const ODOO_DB = $secrets.get('ODOO_DB') || 'odoo'
     const ODOO_USER = $secrets.get('ODOO_USER')
     const ODOO_PASSWORD = $secrets.get('ODOO_PASSWORD')
+
+    if (!ODOO_URL || !ODOO_USER || !ODOO_PASSWORD) {
+      return e.badRequestError('Odoo credentials missing in secrets')
+    }
 
     const authRes = $http.send({
       url: ODOO_URL + '/jsonrpc',
