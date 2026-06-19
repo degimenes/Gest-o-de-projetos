@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,28 +25,39 @@ export function ProjectCombobox({
 }) {
   const [open, setOpen] = useState(false)
   const [projects, setProjects] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let mounted = true
+    setLoading(true)
+    setError(null)
     getOdooProjects()
-      .then((res) => setProjects(res.projects || []))
-      .catch(console.error)
-      .finally(() => setLoading(false))
+      .then((res) => {
+        if (!mounted) return
+        const data = Array.isArray(res) ? res : res.projects || res.items || res.data || []
+        setProjects(data)
+      })
+      .catch((err) => {
+        if (!mounted) return
+        console.error(err)
+        setError('Erro ao carregar projetos do Odoo.')
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => {
+      mounted = false
+    }
   }, [])
 
-  const filteredProjects = projects
-    .filter((p) => {
-      if (!managerFilter) return true
-      const mName = p.user_id ? p.user_id[1] : p.manager_id ? p.manager_id[1] : ''
-      return mName?.toLowerCase().includes(managerFilter.toLowerCase())
-    })
-    .filter((p) => p.code)
+  const filteredProjects = projects.filter((p) => {
+    if (!managerFilter) return true
+    const mName = p.user_id ? p.user_id[1] : p.manager_id ? p.manager_id[1] : ''
+    return mName?.toLowerCase().includes(managerFilter.toLowerCase())
+  })
 
-  if (loading) {
-    return <Skeleton className="h-10 w-full" />
-  }
-
-  const selectedProject = filteredProjects.find((project) => project.code === value)
+  const selectedProject = filteredProjects.find((project) => project.id?.toString() === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -58,9 +69,13 @@ export function ProjectCombobox({
           className="w-full justify-between font-normal"
         >
           <span className="truncate">
-            {selectedProject
-              ? `[${selectedProject.code}] ${selectedProject.name}`
-              : 'Selecione um projeto Odoo...'}
+            {loading
+              ? 'Carregando projetos...'
+              : error
+                ? 'Erro ao carregar projetos'
+                : selectedProject
+                  ? `${selectedProject.name} - ${selectedProject.code || selectedProject.id}`
+                  : 'Selecione um projeto Odoo...'}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -69,28 +84,45 @@ export function ProjectCombobox({
         <Command>
           <CommandInput placeholder="Buscar por código ou nome do projeto..." />
           <CommandList>
-            <CommandEmpty>Sem dados disponíveis.</CommandEmpty>
+            {loading && (
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-4/6" />
+              </div>
+            )}
+            {!loading && error && (
+              <div className="p-4 text-sm text-red-500 flex items-center justify-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                <span>{error}</span>
+              </div>
+            )}
+            {!loading && !error && filteredProjects.length === 0 && (
+              <CommandEmpty>Nenhum projeto encontrado.</CommandEmpty>
+            )}
             <CommandGroup>
-              {filteredProjects.map((project) => (
-                <CommandItem
-                  key={project.id}
-                  value={`[${project.code}] ${project.name}`}
-                  onSelect={() => {
-                    onChange(project.code)
-                    setOpen(false)
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4 flex-shrink-0',
-                      value === project.code ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  <span className="truncate">
-                    [{project.code}] {project.name}
-                  </span>
-                </CommandItem>
-              ))}
+              {!loading &&
+                !error &&
+                filteredProjects.map((project) => (
+                  <CommandItem
+                    key={project.id}
+                    value={`${project.name} ${project.code || ''} ${project.id}`}
+                    onSelect={() => {
+                      onChange(project.id.toString())
+                      setOpen(false)
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4 flex-shrink-0',
+                        value === project.id?.toString() ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <span className="truncate">
+                      {project.name} - {project.code || project.id}
+                    </span>
+                  </CommandItem>
+                ))}
             </CommandGroup>
           </CommandList>
         </Command>

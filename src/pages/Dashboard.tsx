@@ -31,7 +31,7 @@ export default function Dashboard() {
   const [settings, setSettings] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
-  const [selectedProjectCode, setSelectedProjectCode] = useState('')
+  const [selectedProjectId, setSelectedProjectId] = useState('')
 
   const loadData = async () => {
     try {
@@ -153,9 +153,9 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="max-w-md">
-            <ProjectCombobox value={selectedProjectCode} onChange={setSelectedProjectCode} />
+            <ProjectCombobox value={selectedProjectId} onChange={setSelectedProjectId} />
           </div>
-          {selectedProjectCode && <LiveProjectFinancials code={selectedProjectCode} />}
+          {selectedProjectId && <LiveProjectFinancials projectId={selectedProjectId} />}
         </CardContent>
       </Card>
 

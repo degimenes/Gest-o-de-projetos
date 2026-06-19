@@ -13,25 +13,25 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-export function LiveProjectFinancials({ code }: { code: string }) {
+export function LiveProjectFinancials({ projectId }: { projectId: string }) {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!code) return
+    if (!projectId) return
     setLoading(true)
     setError('')
     setData(null)
-    getDiagnostic(code)
+    getDiagnostic(projectId)
       .then(setData)
       .catch((err) =>
         setError(err?.data?.message || err?.message || 'Erro ao carregar dados do Odoo.'),
       )
       .finally(() => setLoading(false))
-  }, [code])
+  }, [projectId])
 
-  if (!code) return null
+  if (!projectId) return null
 
   if (loading) {
     return (
