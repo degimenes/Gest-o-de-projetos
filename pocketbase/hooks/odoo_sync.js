@@ -2,11 +2,12 @@ routerAdd(
   'POST',
   '/backend/v1/sync-odoo',
   (e) => {
-    const url = $secrets.get('ODOO_URL') || ''
-    const user = $secrets.get('ODOO_USER') || ''
-    const pass = $secrets.get('ODOO_PASSWORD') || ''
+    const ODOO_URL = $secrets.get('ODOO_URL')
+    const ODOO_DB = $secrets.get('ODOO_DB') || 'odoo'
+    const ODOO_USER = $secrets.get('ODOO_USER')
+    const ODOO_PASSWORD = $secrets.get('ODOO_PASSWORD')
 
-    if (!url || !user || !pass) {
+    if (!ODOO_URL || !ODOO_USER || !ODOO_PASSWORD) {
       $app.logger().error('Odoo credentials missing in secrets')
       return e.badRequestError('Credenciais do Odoo não configuradas nos Segredos (Secrets).')
     }
@@ -14,24 +15,50 @@ routerAdd(
     let odooProjects = []
 
     try {
-      const res = $http.send({
-        url: url.replace(/\/$/, '') + '/api/projects',
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Odoo-User': user,
-          'X-Odoo-Password': pass,
-        },
-        timeout: 15,
+      const authRes = $http.send({
+        url: ODOO_URL + '/jsonrpc',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'call',
+          params: {
+            service: 'common',
+            method: 'authenticate',
+            args: [ODOO_DB, ODOO_USER, ODOO_PASSWORD, {}],
+          },
+        }),
       })
 
-      if (res.statusCode >= 400) {
-        throw new Error('Odoo API retornou status ' + res.statusCode)
-      }
+      const uid = authRes.json?.result
+      if (!uid) return e.badRequestError('Falha na autenticação do Odoo.')
 
-      odooProjects = res.json?.data || res.json || []
+      const searchRes = $http.send({
+        url: ODOO_URL + '/jsonrpc',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'call',
+          params: {
+            service: 'object',
+            method: 'execute_kw',
+            args: [
+              ODOO_DB,
+              uid,
+              ODOO_PASSWORD,
+              'account.analytic.account',
+              'search_read',
+              [],
+              { fields: ['id', 'name', 'code', 'user_id', 'partner_id'] },
+            ],
+          },
+        }),
+      })
+
+      odooProjects = searchRes.json?.result || []
     } catch (err) {
-      $app.logger().error('Failed to fetch from Odoo', 'error', err.message, 'url', url)
+      $app.logger().error('Failed to fetch from Odoo', 'error', err.message, 'url', ODOO_URL)
       return e.badRequestError('A API do Odoo está inacessível ou as credenciais são inválidas.')
     }
 
@@ -46,30 +73,26 @@ routerAdd(
 
     $app.runInTransaction((txApp) => {
       for (const pData of odooProjects) {
+        if (!pData.name) continue
+
         let record
         try {
-          record = txApp.findFirstRecordByData('projects', 'nome_projeto', pData.nome_projeto)
+          record = txApp.findFirstRecordByData('projects', 'nome_projeto', pData.name)
           updatedCount++
         } catch (_) {
           record = new Record(projectsCollection)
-          record.set('nome_projeto', pData.nome_projeto)
+          record.set('nome_projeto', pData.name)
           createdCount++
         }
 
-        if (pData.id_gerente) record.set('id_gerente', pData.id_gerente)
-        if (pData.nome_gerente) record.set('nome_gerente', pData.nome_gerente)
-        if (pData.status) record.set('status', pData.status)
-        if (pData.receita_venda_produto !== undefined)
-          record.set('receita_venda_produto', Number(pData.receita_venda_produto))
-        if (pData.receita_venda_servico !== undefined)
-          record.set('receita_venda_servico', Number(pData.receita_venda_servico))
-        if (pData.custos_materiais !== undefined)
-          record.set('custos_materiais', Number(pData.custos_materiais))
-        if (pData.custos_servicos !== undefined)
-          record.set('custos_servicos', Number(pData.custos_servicos))
-        if (pData.custo_mao_de_obra !== undefined)
-          record.set('custo_mao_de_obra', Number(pData.custo_mao_de_obra))
-        if (pData.despesas_adm !== undefined) record.set('despesas_adm', Number(pData.despesas_adm))
+        if (pData.user_id && Array.isArray(pData.user_id)) {
+          record.set('id_gerente', String(pData.user_id[0]))
+          record.set('nome_gerente', pData.user_id[1])
+        }
+
+        if (!record.get('status')) {
+          record.set('status', 'Em Andamento')
+        }
 
         txApp.save(record)
       }
